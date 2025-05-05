@@ -112,15 +112,12 @@ def download_image_if_needed(url, save_dir="images"):
     local_path = os.path.join(save_dir, filename)
 
     if not os.path.exists(local_path):
-        print(f"Downloading image: {url}")
         response = requests.get(url)
         if response.status_code == 200:
             with open(local_path, "wb") as f:
                 f.write(response.content)
         else:
             raise Exception(f"Failed to download image: {url} (status {response.status_code})")
-    else:
-        print(f"Image already exists: {local_path}")
 
     return local_path
 
