@@ -1,16 +1,55 @@
 # World of Warships PlayerStats
 
-## Download Ship Info from API (with Images)
+## Preparation
+
+### Create a .env File
+```bash
+cp .env.dist .env
+```
+Make sure you add your application ID for the Wargaming API.
+
+### Create a Virtual Environment
+```bash
+python -m venv venv
+```
+
+### Activate the Virtual Environment
+```bash
+source venv/bin/activate
+```
+on Mac OS, or
+```bash
+venv\Scripts\activate.ps1
+```
+To deactivate the virtual environment, simply type
+```bash
+deactivate
+```
+
+### Update PIP (in Virtual Environment)
+```bash
+pip install --upgrade pip
+```
+or
+```bash
+python -m pip install --upgrade pip
+```
+
+----
+
+## Usage
+
+### Download Ship Info from API (with Images)
 ```bash
 python ships.py
 ```
 
-## Create Ship ID List
+### Create Ship ID List
 ```bash
 python ids.py
 ```
 
-## Download Player Stats
+### Download Player Stats
 ```bash
 python stats.py --help
 
