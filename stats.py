@@ -12,6 +12,33 @@ from lib import (load_expected_values_from_api, load_ships_from_api, load_stats_
                  ship_dict_to_list, write_cell)
 
 
+def get_ship_nation(nation_str: str, adjective: bool = False) -> str:
+    if nation_str == "CW": return "Commonwealth"
+    if nation_str == "EU": return "European" if adjective else "Europe"
+    if nation_str == "FR": return "French" if adjective else "France"
+    if nation_str == "DE": return "German" if adjective else "Germany"
+    if nation_str == "IT": return "Italian" if adjective else "Italy"
+    if nation_str == "JP": return "Japanese" if adjective else "Japan"
+    if nation_str == "NL": return "Dutch" if adjective else "Netherlands"
+    if nation_str == "AM": return "Pan-American" if adjective else "Pan-America"
+    if nation_str == "AS": return "Pan-Asian" if adjective else "Pan-Asia"
+    if nation_str == "ES": return "Spanish" if adjective else "Spain"
+    if nation_str == "UK": return "British" if adjective else "United Kingdom"
+    if nation_str == "US": return "American" if adjective else "United States"
+    if nation_str == "SU": return "Soviet" if adjective else "Soviet Union"
+    
+    return ""
+
+def get_ship_type(type_str: str) -> str:
+    if type_str == "A": return "Aircraft Carriers"
+    if type_str == "B": return "Battleships"
+    if type_str == "C": return "Cruisers"
+    if type_str == "D": return "Destroyers"
+    if type_str == "S": return "Submarines"
+    
+    return ""
+
+
 ship_type_abbreviations = {
     "AirCarrier": "A",
     "Battleship": "B",
@@ -40,7 +67,6 @@ nation_codes = {
 parser = argparse.ArgumentParser(description="Generate a docx file with stats for a given account.")
 parser.add_argument("account_id", type=int, help="Account ID")
 parser.add_argument("--days", type=int, default=30, help="Number of days to include in the docx file.")
-parser.add_argument("--no-description", action="store_true", help="Don't include ship descriptions in the docx file.")
 parser.add_argument("--type", type=str, choices=["all", "A", "B", "C", "D", "S"], default="all", help="Filter by ship type.")
 parser.add_argument("--nation", type=str, choices=["all", "CW", "EU", "FR", "DE", "IT", "JP", "NL", "AM", "AS", "ES", "UK", "US", "SU"], default="all", help="Filter by nation.")
 parser.add_argument("--order", type=str, choices=["date", "name"], default="date", help="Order by date or name.")
@@ -77,34 +103,21 @@ now_ts = int(time.time())
 doc = Document('./input/template.docx')
 remove_first_paragraph(doc)
 
-title_str = f"Stats Player {account_id}"
+if args.type == "all" and args.nation == "all":
+    title_str = "All Ships Types"
+elif args.type != "all" and args.nation == "all":
+    title_str = f"{get_ship_type(args.type)}"
+elif args.type == "all" and args.nation != "all":
+    title_str = f"{get_ship_nation(args.nation)}"
+else:
+    title_str = f"{get_ship_nation(args.nation, True)} {get_ship_type(args.type)}"
 
-if args.type != "all":
-    title_str += " ("
-    
-    if args.nation != "all":
-        if args.nation == "CW": title_str += "Commonwealth "
-        elif args.nation == "EU": title_str += "European "
-        elif args.nation == "FR": title_str += "French "
-        elif args.nation == "DE": title_str += "German "
-        elif args.nation == "IT": title_str += "Italian "
-        elif args.nation == "JP": title_str += "Japanese "
-        elif args.nation == "NL": title_str += "Dutch "
-        elif args.nation == "AM": title_str += "Pan-American "
-        elif args.nation == "AS": title_str += "Pan-Asian "
-        elif args.nation == "ES": title_str += "Spanish "
-        elif args.nation == "UK": title_str += "British "
-        elif args.nation == "US": title_str += "American "
-        elif args.nation == "SU": title_str += "Soviet "
-    
-    if args.type == "A": title_str += " Aircraft Carriers)"
-    elif args.type == "B": title_str += " Battleships)"
-    elif args.type == "C": title_str += " Cruisers)"
-    elif args.type == "D": title_str += " Destroyers)"
-    elif args.type == "S": title_str += " Submarines)"
+title_str += f" (Last {args.days} days)"
 
-doc.add_paragraph(title_str, style="Title")
-doc.add_paragraph(f"{now.strftime('%d %B %Y, %H:%M:%S')}", style="Subtitle")
+title_str += f" - {now.strftime('%d %B %Y, %H:%M')}"
+
+doc.core_properties.title = title_str
+doc.core_properties.author = f"Player {account_id}"
 
 for data in sorted_list:
     if args.type != "all" and ship_type_abbreviations.get(data["type"], "") != args.type:
@@ -168,6 +181,7 @@ for data in sorted_list:
     ship_info += f"{data['type_str']})"
     
     para = doc.add_paragraph(f"{data["name"]} ", style="Heading 1")
+    para.paragraph_format.keep_with_next = True
     run_descr = para.add_run(f"{ship_info}   ")
     run_descr.style = "Subtle Emphasis"
     run_pr = para.add_run(f"PR: {pr:,.0f}" if pr else "PR: n/a")
@@ -175,11 +189,8 @@ for data in sorted_list:
     run_id = para.add_run(f"\t{data["id"]}")
     run_id.style = "Intense Emphasis"
     
-    if (not args.no_description) and data["description"]:
-        doc.add_paragraph(
-            f"{data['description']}",
-            style="Normal",
-        )
+    anchor = doc.add_paragraph()
+    anchor.paragraph_format.keep_with_next = True
     
     table = doc.add_table(rows=7, cols=15)
     # table.style = "MyTableGrid"
